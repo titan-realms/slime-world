@@ -17,4 +17,5 @@ repositories {
 
 dependencies {
     implementation("com.github.Minestom:Minestom:$minestomVersion")
+    implementation("com.github.luben:zstd-jni:1.4.9-1")
 }
