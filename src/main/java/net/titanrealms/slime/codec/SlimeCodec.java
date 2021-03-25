@@ -5,8 +5,7 @@ import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.palette.PaletteStorage;
 import net.minestom.server.instance.palette.Section;
-import net.minestom.server.utils.Utils;
-import org.jglrxavpok.hephaistos.nbt.NBTCompound;
+import net.minestom.server.world.biomes.Biome;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -142,9 +141,8 @@ public interface SlimeCodec {
                 worldSurface[x + z * 16] = 5;
             }
         }
-        new NBTCompound()
-                .setLongArray("MOTION_BLOCKING", Utils.encodeBlocks(motionBlocking, 9))
-                .setLongArray("WORLD_SURFACE", Utils.encodeBlocks(worldSurface, 9));
+        Integer[] biomes = Arrays.stream(chunk.getBiomes()).map(Biome::getId).toArray(Integer[]::new);
+
         return new byte[0];
     }
 
