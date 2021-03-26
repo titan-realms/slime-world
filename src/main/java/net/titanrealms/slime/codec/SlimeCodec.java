@@ -3,6 +3,7 @@ package net.titanrealms.slime.codec;
 import com.github.luben.zstd.Zstd;
 import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.palette.PaletteStorage;
 import net.minestom.server.instance.palette.Section;
 import net.minestom.server.world.biomes.Biome;
@@ -15,6 +16,7 @@ import java.util.OptionalInt;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /*
@@ -73,6 +75,7 @@ public interface SlimeCodec {
     short MAGIC = (short) 0xb10b;
 
     default Instance decodeSlime(byte[] slime) {
+        CodecStream stream = CodecStream.create();
         return null;
     }
 
@@ -127,23 +130,33 @@ public interface SlimeCodec {
         return stream.byteOut().toByteArray();
     }
 
-    default byte[] encodeChunk(Chunk chunk) {
-        int chunkX = chunk.getChunkX();
-        int chunkZ = chunk.getChunkZ();
+    default byte[] encodeChunk(Chunk chunk) throws IOException {
+        CodecStream stream = CodecStream.create();
 
         Section[] sections = chunk.getFreshFullDataPacket().paletteStorage.getSections();
 
-        int[] motionBlocking = new int[16 * 16];
-        int[] worldSurface = new int[16 * 16];
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
-                motionBlocking[x + z * 16] = 4;
-                worldSurface[x + z * 16] = 5;
-            }
-        }
-        Integer[] biomes = Arrays.stream(chunk.getBiomes()).map(Biome::getId).toArray(Integer[]::new);
+        int[] heightMap = new int[256]; // ignore for now - hardcoded in minestom
 
-        return new byte[0];
+        for (int biome : Arrays.stream(chunk.getBiomes()).map(Biome::getId).collect(Collectors.toList())) {
+            stream.out().writeInt(biome);
+        }
+
+        byte[] sectionsBitmask = this.createSectionsBitmask(chunk);
+        stream.out().write(sectionsBitmask);
+        for (int i = 0; i < 2 - sectionsBitmask.length; i++) { // padding
+            stream.out().write(0);
+        }
+
+        for (Section section : sections) {
+            byte[] blockLight = new byte[2048]; // ignore for now - hardcoded in minestom
+            long[] blocks = section.getBlocks();
+            for (long block : blocks) {
+                stream.out().writeLong(block);
+            }
+            byte[] data = new byte[2048];
+            byte[] skylight = new byte[2048]; // ignore for now - hardcoded in minestom
+        }
+        return stream.byteOut().toByteArray();
     }
 
     default byte[] createChunkBitmask(Collection<Chunk> chunks, short width, short depth, short minZ, short minX) {
@@ -163,5 +176,14 @@ public interface SlimeCodec {
             chunkBitSet.set(index, isEmpty ? 0 : 1);
         }
         return chunkBitSet.toByteArray();
+    }
+
+    default byte[] createSectionsBitmask(Chunk chunk) {
+        Section[] sections = chunk.getFreshFullDataPacket().paletteStorage.getSections();
+        BitSet sectionsBitSet = new BitSet(16);
+        for (int i = 0; i < sections.length; i++) {
+            sectionsBitSet.set(i, sections[i] != null);
+        }
+        return sectionsBitSet.toByteArray();
     }
 }
