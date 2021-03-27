@@ -74,11 +74,6 @@ Custom chunk format
 public interface SlimeCodec {
     short MAGIC = (short) 0xb10b;
 
-    default Instance decodeSlime(byte[] slime) {
-        CodecStream stream = CodecStream.create();
-        return null;
-    }
-
     default byte[] encodeInstance(Instance instance) throws IOException {
         Collection<Chunk> chunks = instance.getChunks();
 

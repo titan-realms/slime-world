@@ -1,4 +1,4 @@
 package net.titanrealms.slime.models;
 
-public class SlimeWorld {
+public class SlimeChunk {
 }
