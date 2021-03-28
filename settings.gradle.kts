@@ -1,2 +1,2 @@
-rootProject.name = "slime-world"
+rootProject.name = "titan-world"
 

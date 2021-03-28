@@ -5,7 +5,7 @@ plugins {
 
 val minestomVersion: String by project;
 
-group = "net.titanrealms.slime"
+group = "net.titanrealms.titan"
 version = "0.1.0"
 
 repositories {
