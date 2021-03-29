@@ -20,6 +20,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class TitanChunkLoader implements IChunkLoader {
     private final TitanWorld titanWorld;
@@ -37,17 +39,20 @@ public class TitanChunkLoader implements IChunkLoader {
         this.titanWorld = titanWorld;
     }
 
-    public TitanChunkLoader() {
-        this(new TitanWorld());
-    }
-
     @Override
     public boolean loadChunk(@NotNull Instance instance, int chunkX, int chunkZ, @Nullable ChunkCallback callback) {
         byte[] serialized = this.titanWorld.getChunk(chunkX, chunkZ);
+        if (serialized == null || serialized.length == 0) {
+            if (callback != null) {
+                callback.accept(new DynamicChunk(this.createDefaultBiomeArray(), chunkX, chunkZ));
+            }
+            return true;
+        }
         try {
             Chunk chunk = this.deserializeChunk(chunkX, chunkZ, serialized);
             if (callback != null) {
                 callback.accept(chunk);
+                return true;
             }
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -77,6 +82,7 @@ public class TitanChunkLoader implements IChunkLoader {
         DataOutputStream stream = new DataOutputStream(byteStream);
 
         ChunkDataPacket chunkData = chunk.getFreshFullDataPacket();
+        Set<short[]> blocks = new LinkedHashSet<>();
         for (byte x = 0; x < 16; x++) {
             for (short y = 0; y < 256; y++) {
                 for (byte z = 0; z < 16; z++) {
@@ -87,10 +93,16 @@ public class TitanChunkLoader implements IChunkLoader {
                     if (blockStateId == 0 && customBlockId == 0) {
                         continue;
                     }
-                    stream.writeShort(index);
-                    stream.writeShort(blockStateId);
-                    stream.writeShort(customBlockId);
+                    blocks.add(new short[]{
+                            index, blockStateId, customBlockId
+                    });
                 }
+            }
+        }
+        stream.writeInt(blocks.size());
+        for (short[] block : blocks) {
+            for (short meta : block) {
+                stream.writeShort(meta);
             }
         }
         return byteStream.toByteArray();
@@ -100,12 +112,13 @@ public class TitanChunkLoader implements IChunkLoader {
         Chunk chunk = new DynamicChunk(this.createDefaultBiomeArray(), chunkX, chunkZ);
         ByteArrayInputStream byteStream = new ByteArrayInputStream(serialized);
         DataInputStream stream = new DataInputStream(byteStream);
-
+        if (stream.readInt() == 0) {
+            return chunk;
+        }
         while (stream.available() > 0) {
             short index = stream.readShort();
             short blockStateId = stream.readShort();
             short customBlockId = stream.readShort();
-
             BlockPosition position = this.indexBlock(index);
             chunk.UNSAFE_setBlock(position.getX(), position.getY(), position.getZ(), blockStateId, customBlockId, null, CustomBlockUtils.hasUpdate(customBlockId));
         }
