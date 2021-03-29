@@ -1,6 +1,6 @@
-package net.titanrealms.titan.objects;
+package net.titanrealms.titan;
 
-import net.titanrealms.titan.TitanChunkLoader;
+import net.titanrealms.titan.objects.Vector2i;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -70,7 +70,7 @@ public class TitanWorld {
         try {
             path = path.resolve(name.concat(".titan"));
             if (!Files.exists(path)) {
-                return null;
+                return new TitanWorld();
             }
             RandomAccessFile file = new RandomAccessFile(path.toFile(), "rw");
             byte[] serialized = new byte[(int) file.length()];
@@ -84,7 +84,6 @@ public class TitanWorld {
         return null;
     }
 
-    // sloppy on purpose
     public void saveAsFile(Path path, String name) {
         try {
             path = path.resolve(name.concat(".titan"));

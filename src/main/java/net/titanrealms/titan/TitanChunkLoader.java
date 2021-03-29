@@ -10,7 +10,6 @@ import net.minestom.server.utils.NamespaceID;
 import net.minestom.server.utils.block.CustomBlockUtils;
 import net.minestom.server.utils.chunk.ChunkCallback;
 import net.minestom.server.world.biomes.Biome;
-import net.titanrealms.titan.objects.TitanWorld;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,7 +69,10 @@ public class TitanChunkLoader implements IChunkLoader {
         int chunkX = chunk.getChunkX();
         int chunkZ = chunk.getChunkZ();
         try {
-            this.titanWorld.setChunk(chunkX, chunkZ, this.serializeChunk(chunk));
+            byte[] serialized = this.serializeChunk(chunk);
+            if (serialized != null) {
+                this.titanWorld.setChunk(chunkX, chunkZ, serialized);
+            }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -80,7 +82,6 @@ public class TitanChunkLoader implements IChunkLoader {
     private byte[] serializeChunk(Chunk chunk) throws IOException {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         DataOutputStream stream = new DataOutputStream(byteStream);
-
         ChunkDataPacket chunkData = chunk.getFreshFullDataPacket();
         Set<short[]> blocks = new LinkedHashSet<>();
         for (byte x = 0; x < 16; x++) {
@@ -98,6 +99,9 @@ public class TitanChunkLoader implements IChunkLoader {
                     });
                 }
             }
+        }
+        if (blocks.size() == 0) {
+            return null;
         }
         stream.writeInt(blocks.size());
         for (short[] block : blocks) {
