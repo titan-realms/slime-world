@@ -1,5 +1,7 @@
 package net.titanrealms.titan.objects;
 
+import net.titanrealms.titan.TitanChunkLoader;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -13,6 +15,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TitanWorld {
     private final Map<String, byte[]> chunks = new ConcurrentHashMap<>();
+    private final TitanChunkLoader chunkLoader = new TitanChunkLoader(this);
+
+    public TitanChunkLoader getChunkLoader() {
+        return this.chunkLoader;
+    }
 
     public byte[] getChunk(int x, int z) {
         return this.chunks.get(this.toKey(x, z));
@@ -62,7 +69,7 @@ public class TitanWorld {
     public static TitanWorld loadFromFile(Path path, String name) {
         try {
             path = path.resolve(name.concat(".titan"));
-            if (Files.exists(path)) {
+            if (!Files.exists(path)) {
                 return null;
             }
             RandomAccessFile file = new RandomAccessFile(path.toFile(), "rw");
